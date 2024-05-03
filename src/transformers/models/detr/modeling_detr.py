@@ -56,6 +56,8 @@ if is_timm_available():
 
 if is_vision_available():
     from transformers.image_transforms import center_to_corners_format
+import torch
+from torchvision.models import mobilenet_v2
 
 logger = logging.get_logger(__name__)
 
@@ -333,10 +335,24 @@ def replace_batch_norm(model):
         if len(list(module.children())) > 0:
             replace_batch_norm(module)
 
+import torch.nn as nn
+
+class MobileNet(nn.Module):
+    def __init__(self, num_classes):
+            super(MobileNet, self).__init__()
+            self.backbone = mobilenet_v2(pretrained=True)
+            self.num_classes = num_classes
+            self.classifier = nn.Linear(1280, num_classes)
+
+    def forward(self, x):
+            features = self.backbone.features(x)
+            features = torch.mean(features, dim=[2, 3])
+            logits = self.classifier(features)
+            return logits
 
 class DetrConvEncoder(nn.Module):
     """
-    Convolutional backbone, using either the AutoBackbone API or one from the timm library.
+    Convolutional backbone, using either normal convolution layers or PyTorch defined layers as backbone.
 
     nn.BatchNorm2d layers are replaced by DetrFrozenBatchNorm2d as defined above.
 
@@ -347,7 +363,6 @@ class DetrConvEncoder(nn.Module):
 
         self.config = config
 
-        # For backwards compatibility we have to use the timm library directly instead of the AutoBackbone API
         if config.use_timm_backbone:
             # We default to values which were previously hard-coded. This enables configurability from the config
             # using backbone arguments, while keeping the default behavior the same.
@@ -367,7 +382,7 @@ class DetrConvEncoder(nn.Module):
                 **kwargs,
             )
         else:
-            backbone = load_backbone(config)
+            backbone = MobileNet(num_classes=1000)
 
         # replace batch norm by frozen batch norm
         with torch.no_grad():

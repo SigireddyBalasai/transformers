@@ -339,17 +339,19 @@ import torch.nn as nn
 
 class MobileNet(nn.Module):
     def __init__(self, num_classes):
-            super(MobileNet, self).__init__()
-            self.backbone = mobilenet_v2(pretrained=True)
-            self.num_classes = num_classes
-            self.channels=1280
-            self.classifier = nn.Linear(1280, num_classes)
+        super(MobileNet, self).__init__()
+        self.backbone = mobilenet_v2(pretrained=True)
+        self.num_classes = num_classes
+        self.channels = 1280
+        
+        self.classifier = nn.Linear(1280, num_classes)
+        self.input_projection = nn.Conv2d(self.backbone.classifier[-1].out_features, config.d_model, kernel_size=1)  # Add this line
 
     def forward(self, x):
-            features = self.backbone.features(x)
-            features = torch.mean(features, dim=[2, 3])
-            logits = self.classifier(features)
-            return logits
+        features = self.backbone.features(x)
+        features = torch.mean(features, dim=[2, 3])
+        logits = self.classifier(features)
+        return logits
 
 class DetrConvEncoder(nn.Module):
     """

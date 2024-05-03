@@ -382,6 +382,7 @@ class DetrConvEncoder(nn.Module):
                 **kwargs,
             )
         else:
+            print("loading Mobilenet")
             backbone = MobileNet(num_classes=1000)
 
         # replace batch norm by frozen batch norm

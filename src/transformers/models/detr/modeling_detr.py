@@ -342,6 +342,7 @@ class MobileNet(nn.Module):
             super(MobileNet, self).__init__()
             self.backbone = mobilenet_v2(pretrained=True)
             self.num_classes = num_classes
+            self.channels=1280
             self.classifier = nn.Linear(1280, num_classes)
 
     def forward(self, x):
